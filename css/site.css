@@ -556,3 +556,37 @@ body,.top,.panel,.feat,.card,.news-item,details,.field,.btn,.chip,.legal-check,.
 :root[data-theme="light"] .hero{border-color:var(--line)}
 :root[data-theme="light"] .showreel-tone{background:linear-gradient(90deg,rgba(24,22,20,.68),rgba(24,22,20,.08)),linear-gradient(0deg,rgba(24,22,20,.78),transparent 48%,rgba(24,22,20,.08))}
 :root[data-theme="light"] .home-page footer{background:#f5f2ec;color:#69645d}
+/* La versión clara cambia también las secciones a pantalla completa de Inicio. */
+:root[data-theme="light"] .showreel{background:#f5f2ec;--reel-accent:#312d28;color:#252320}
+:root[data-theme="light"] .showreel-media{background:#f5f2ec}
+:root[data-theme="light"] .showreel-media img{opacity:.22;filter:grayscale(.35) saturate(.62)}
+:root[data-theme="light"] .showreel-media img.showreel-mark{opacity:.12;mix-blend-mode:multiply;filter:grayscale(1)}
+:root[data-theme="light"] .showreel-tone{background:linear-gradient(90deg,rgba(245,242,236,.86),rgba(245,242,236,.26) 58%,rgba(245,242,236,.08)),linear-gradient(0deg,rgba(245,242,236,.66),rgba(245,242,236,.08) 38%,transparent 70%)}
+:root[data-theme="light"] .showreel-label,:root[data-theme="light"] .showreel h1,:root[data-theme="light"] .showreel-count{color:#252320}
+:root[data-theme="light"] .showreel-count span,:root[data-theme="light"] .showreel-description,:root[data-theme="light"] .download-note,:root[data-theme="light"] .scroll-hint{color:#514d46}
+:root[data-theme="light"] .scroll-hint-line{background:#514d46}
+:root[data-theme="light"] .pill-outline{color:#312d28;border-color:rgba(49,45,40,.48);background:rgba(255,255,255,.35)}
+:root[data-theme="light"] .pill-outline:hover{background:rgba(255,255,255,.72);border-color:#312d28}
+:root[data-theme="light"] .reel-arrow,:root[data-theme="light"] .reel-toggle{color:#312d28;border-color:rgba(49,45,40,.46);background:rgba(255,255,255,.35)}
+:root[data-theme="light"] .reel-dot::before{background:rgba(49,45,40,.38)}
+:root[data-theme="light"] .reel-dot[aria-current=true]::before{background:#312d28}
+:root[data-theme="light"] .text-action{color:#38332d;border-color:rgba(56,51,45,.48)}
+:root[data-theme="light"] .text-action:hover{color:#a65331;border-color:#a65331}
+:root[data-theme="light"] .world-feature{background:#ede9e1}
+:root[data-theme="light"] .world-image img{opacity:.28;filter:saturate(.68)}
+:root[data-theme="light"] .world-image::after,:root[data-theme="light"] .world-feature.reverse .world-image::after{background:linear-gradient(90deg,rgba(245,242,236,.88),rgba(245,242,236,.18) 78%),linear-gradient(0deg,rgba(245,242,236,.64),transparent 68%)}
+:root[data-theme="light"] .world-copy h3,:root[data-theme="light"] .world-genre,:root[data-theme="light"] .world-price{color:#282621}
+:root[data-theme="light"] .world-description{color:#57534c}
+:root[data-theme="light"] .world-bottom{border-color:#cbc5ba}
+:root[data-theme="light"] .world-shade{opacity:.16;mix-blend-mode:multiply}
+:root[data-theme="light"] .library-stage{background:#eeeae2}
+:root[data-theme="light"] .library-wordmark{opacity:.14;filter:grayscale(1) invert(.88)}
+:root[data-theme="light"] .library-stage-shade{background:linear-gradient(90deg,rgba(245,242,236,.92),rgba(245,242,236,.48) 65%,rgba(245,242,236,.18)),linear-gradient(0deg,rgba(245,242,236,.56),transparent 50%)}
+:root[data-theme="light"] .library-stage-copy h2{color:#252320}
+:root[data-theme="light"] .library-stage-copy p{color:#57534c}
+:root[data-theme="light"] .dispatch-lead{background:linear-gradient(145deg,#eeeae2,#e5e0d6)}
+:root[data-theme="light"] .dispatch-art{opacity:.23;filter:grayscale(.45)}
+:root[data-theme="light"] .dispatch-lead::after{background:linear-gradient(0deg,rgba(245,242,236,.86),rgba(245,242,236,.14) 86%)}
+:root[data-theme="light"] .dispatch-lead-copy time,:root[data-theme="light"] .dispatch-lead-copy h3,:root[data-theme="light"] .dispatch-lead-copy p,:root[data-theme="light"] .dispatch-main time,:root[data-theme="light"] .dispatch-main h3,:root[data-theme="light"] .dispatch-main p,:root[data-theme="light"] .dispatch-index,:root[data-theme="light"] .dispatch-arrow{color:#302c26}
+:root[data-theme="light"] .dispatch-item{border-color:rgba(48,44,38,.22)}
+:root[data-theme="light"] .dispatch-item:hover{background:rgba(255,255,255,.55)}
