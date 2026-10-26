@@ -425,3 +425,33 @@ footer{border-color:#34332f;color:#a7a39b}footer a:hover{color:#f0eae2}
 }
 @media(max-width:390px){.home-page .top .wrap{gap:4px 10px}.home-page .top nav{gap:12px}.home-page .top nav a{font-size:7px}.showreel-actions{align-items:flex-start;flex-direction:column}.header-download{height:29px;width:29px}}
 @media(prefers-reduced-motion:reduce){.showreel,.showreel *, .home-page [data-reveal],.home-page [data-reveal] *{animation:none!important;transition:none!important;scroll-behavior:auto!important}.home-page.motion-ready [data-reveal]:not(.is-visible){opacity:1;transform:none}.home-page.motion-ready .world-feature:not(.is-visible) .world-image img{transform:none;filter:none}}
+
+/* Cuenta y registro: recuperar espacio y organizar campos por grupos. */
+#acc.narrow{width:min(1040px,calc(100% - 48px));margin:clamp(42px,8vh,88px) auto}
+.auth-form{width:min(100%,760px);margin-inline:auto;padding:clamp(26px,5vw,48px);gap:18px}
+.auth-form h1{font-size:clamp(32px,4vw,44px);letter-spacing:-.04em;font-weight:520}
+.auth-form>p.muted{max-width:58ch;line-height:1.7}
+.signup-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;column-gap:22px;row-gap:18px}
+.signup-form h1,.signup-form>p,.signup-form>.legal-checks,.signup-form>.form-msg,.signup-form>.btn,.signup-form>.links{grid-column:1/-1}
+.signup-form .lbl{min-width:0}
+.legal-check{padding:10px 12px;border:1px solid #363631;border-radius:3px;min-height:48px}
+.legal-check:focus-within{border-color:#d99a76}
+@media(max-width:620px){#acc.narrow{width:min(100% - 32px,500px);margin:28px auto}.signup-form{grid-template-columns:1fr;gap:14px}.signup-form h1,.signup-form>p,.signup-form>.legal-checks,.signup-form>.form-msg,.signup-form>.btn,.signup-form>.links{grid-column:1}}
+
+/* Perfil y red social privada por defecto. */
+.profile-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}
+.profile-form>.lbl{grid-column:auto}.profile-form>.legal-check,.profile-form>.privacy-hint,.profile-form>.form-msg,.profile-form>.btn{grid-column:1/-1}
+.privacy-hint{font-size:12px;line-height:1.65;max-width:66ch}
+.social-list{display:grid;gap:10px;margin-top:16px}
+.social-item{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+.social-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:var(--card2)}
+.social-avatar.placeholder{display:grid;place-items:center;color:var(--txt);font-weight:700}
+.social-copy{min-width:0;flex:1}.social-copy p{color:var(--mut);font-size:13px;overflow-wrap:anywhere}
+@media(max-width:620px){.profile-form{grid-template-columns:1fr}.profile-form>.lbl,.profile-form>.legal-check,.profile-form>.privacy-hint,.profile-form>.form-msg,.profile-form>.btn{grid-column:1}.social-item{align-items:flex-start;flex-wrap:wrap}}
+
+.success-flash{animation:success-flash 460ms cubic-bezier(.23,1,.32,1) both}
+@keyframes success-flash{0%{transform:scale(.985);opacity:.65}65%{transform:scale(1.018);opacity:1}100%{transform:scale(1)}}
+.note.ok{animation:success-flash 460ms cubic-bezier(.23,1,.32,1) both}
+@media(prefers-reduced-motion:reduce){.success-flash,.note.ok{animation:none}}
+
+.profile-result{flex-wrap:wrap}.social-banner{width:100%;height:96px;object-fit:cover;border-radius:4px;background:var(--card2)}

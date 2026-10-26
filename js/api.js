@@ -59,6 +59,7 @@
     if (code === 'email_not_confirmed' || msg.includes('not confirmed')) return 'email_not_confirmed';
     if (code === 'user_already_exists' || msg.includes('already registered')) return 'user_exists';
     if (code === 'weak_password') return 'weak_password';
+    if (r.status === 500 && (msg.includes('email') || msg.includes('smtp') || code === 'unexpected_failure')) return 'email_delivery_failed';
     if (code === 'same_password') return 'same_password';
     if (code === 'otp_expired' || msg.includes('invalid or has expired') || msg.includes('token has expired')) return 'invalid_otp';
     if (r.status === 429 || code.includes('rate_limit')) return 'rate_limited';
@@ -67,7 +68,7 @@
   }
 
   const MESSAGES = {
-    network: 'No hay conexión con el servidor.', invalid_credentials: 'Correo o contraseña incorrectos.', consent_required: 'Acepta por separado los términos y la política de privacidad.',
+    network: 'No hay conexión con el servidor.', invalid_credentials: 'Correo o contraseña incorrectos.', consent_required: 'Acepta por separado los términos y la política de privacidad.', email_delivery_failed: 'El correo de confirmacion de KOVO no pudo enviarse. La cuenta puede haberse creado. Corrige el servicio de correo y luego usa la opcion Reenviar codigo; no registres otra vez el mismo correo.',
     email_not_confirmed: 'Confirma tu correo antes de iniciar sesión.', user_exists: 'Ese correo ya está registrado.',
     weak_password: 'La contraseña debe tener al menos 8 caracteres.', same_password: 'La nueva contraseña debe ser distinta a la anterior.',
     invalid_otp: 'Código incorrecto o vencido.', rate_limited: 'Demasiados intentos. Espera un momento.',
@@ -138,7 +139,7 @@
     if (av.ok && av.data === false) return { ok: false, error: 'username_taken' };
     const r = await http('POST', '/auth/v1/signup', { body: { email: email.toLowerCase(), password, data: {
       username, accepted_terms: true, accepted_privacy: true,
-      terms_version: '2026-10-25-v1', privacy_version: '2026-10-25-v1', acceptance_source: 'web'
+      terms_version: '2026-10-26-v2', privacy_version: '2026-10-26-v2', acceptance_source: 'web'
     } } });
     if (!r.ok) return { ok: false, error: mapError(r) };
     const d = r.data || {};
@@ -222,6 +223,66 @@
   const claim = (id) => (GAME_RE.test(id) ? rpc('claim_free_game', { p_game_id: id }) : Promise.resolve({ ok: false, error: 'invalid_input' }));
   const redeem = (code) => { const c = String(code || '').trim().toUpperCase(); return CODE_RE.test(c) ? rpc('redeem_code', { p_code: c }) : Promise.resolve({ ok: false, error: 'invalid_code' }); };
 
+  async function myProfile() {
+    if (!session) return {ok:false,error:'unauthorized'};
+    const r=await authed('GET','/rest/v1/profiles?select=id,username,avatar_url,banner_url,bio,profile_public&id=eq.'+encodeURIComponent(session.user.id));
+    return r.ok && Array.isArray(r.data) && r.data[0] ? {ok:true,profile:r.data[0]} : {ok:false,error:r.network?'network':'unknown'};
+  }
+  async function saveProfile(profile) {
+    if (!session) return {ok:false,error:'unauthorized'};
+    const bio=String(profile.bio||'').trim().slice(0,280);
+    const body={bio,profile_public:profile.profile_public===true,avatar_url:profile.avatar_url||null,banner_url:profile.banner_url||null};
+    const r=await authed('PATCH','/rest/v1/profiles?id=eq.'+encodeURIComponent(session.user.id)+'&select=id,username,avatar_url,banner_url,bio,profile_public',body,{extraHeaders:{Prefer:'return=representation'}});
+    return r.ok?{ok:true}:{ok:false,error:r.network?'network':r.status===401?'unauthorized':'unknown'};
+  }
+  async function uploadProfileImage(file,kind) {
+    if (!session || !file || !['avatar','banner'].includes(kind)) return {ok:false,error:'invalid_input'};
+    const allowed={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'};
+    if (!allowed[file.type] || file.size>3145728) return {ok:false,error:'invalid_image'};
+    const token=await ensureToken(); if(!token)return {ok:false,error:'unauthorized'};
+    const path=String(session.user.id)+'/'+kind+'.'+allowed[file.type];
+    const url=BASE+'/storage/v1/object/profile-media/'+path;
+    try {
+      const res=await fetch(url,{method:'POST',headers:{apikey:C.SUPABASE_KEY,Authorization:'Bearer '+token,'Content-Type':file.type,'x-upsert':'true'},body:file,credentials:'omit',redirect:'error'});
+      if(!res.ok)return {ok:false,error:res.status===413?'invalid_image':'upload_failed'};
+      return {ok:true,path};
+    } catch { return {ok:false,error:'network'}; }
+  }
+  async function signedProfileImage(path) {
+    const clean=String(path||'');
+    if(!/^[0-9a-f-]{36}\/(avatar|banner)\.(png|jpg|webp)$/i.test(clean))return '';
+    const r=await authed('POST','/storage/v1/object/sign/profile-media/'+clean,{expiresIn:900});
+    if(!r.ok||!r.data||typeof r.data.signedURL!=='string')return '';
+    return /^https:\/\//i.test(r.data.signedURL)?r.data.signedURL:BASE+'/storage/v1'+(r.data.signedURL.startsWith('/')?r.data.signedURL:'/'+r.data.signedURL);
+  }
+  async function searchProfiles(query) {
+    if(!session)return {ok:false,error:'unauthorized',items:[]};
+    const q=String(query||'').trim();
+    if(q.length<3)return {ok:true,items:[]};
+    const r=await authed('GET','/rest/v1/profiles?select=id,username,avatar_url,banner_url,bio&profile_public=eq.true&username=ilike.*'+encodeURIComponent(q)+'*&limit=15&order=username.asc');
+    if(!r.ok||!Array.isArray(r.data))return {ok:false,error:r.network?'network':'unknown',items:[]};
+    const items=await Promise.all(r.data.filter(x=>x.id!==session.user.id).map(async x=>({...x,avatar_url:await signedProfileImage(x.avatar_url),banner_url:await signedProfileImage(x.banner_url)})));
+    return {ok:true,items};
+  }
+  async function friendRequests() {
+    if(!session)return {ok:false,error:'unauthorized',items:[]};
+    const select='select=id,requester,recipient,status,created_at,requester_profile:profiles!friend_requests_requester_fkey(username,avatar_url),recipient_profile:profiles!friend_requests_recipient_fkey(username,avatar_url)';
+    const filter='&or=(requester.eq.'+encodeURIComponent(session.user.id)+',recipient.eq.'+encodeURIComponent(session.user.id)+')&order=created_at.desc&limit=80';
+    const r=await authed('GET','/rest/v1/friend_requests?'+select+filter);
+    return r.ok&&Array.isArray(r.data)?{ok:true,items:r.data}:{ok:false,error:r.network?'network':'unknown',items:[]};
+  }
+  async function sendFriendRequest(target) {
+    if(!session||!UUID_RE.test(String(target)))return {ok:false,error:'invalid_input'};
+    const r=await authed('POST','/rest/v1/friend_requests',{requester:session.user.id,recipient:target,status:'pending'},{extraHeaders:{Prefer:'return=minimal'}});
+    if(r.ok)return {ok:true};
+    const m=String((r.data||{}).message||'').toLowerCase();
+    return {ok:false,error:r.status===409||m.includes('duplicate')?'request_exists':r.status===401?'unauthorized':r.network?'network':'unknown'};
+  }
+  async function respondFriendRequest(id,accept) {
+    if(!session||!UUID_RE.test(String(id)))return {ok:false,error:'invalid_input'};
+    const r=await authed('PATCH','/rest/v1/friend_requests?id=eq.'+encodeURIComponent(id)+'&recipient=eq.'+encodeURIComponent(session.user.id)+'&status=eq.pending',{status:accept?'accepted':'declined',updated_at:new Date().toISOString()},{extraHeaders:{Prefer:'return=representation'}});
+    return r.ok&&Array.isArray(r.data)&&r.data.length?{ok:true}:{ok:false,error:r.status===401?'unauthorized':r.network?'network':'unknown'};
+  }
   async function enqueueEmbed(channelId, payload) {
     if (!session || !/^\d{17,20}$/.test(String(channelId))) return { ok: false, error: 'invalid_input' };
     const r = await authed('POST', '/rest/v1/bot_outbox?select=id', { requested_by: session.user.id, kind: 'embed', target_channel: String(channelId), payload, status: 'queued' }, { extraHeaders: { Prefer: 'return=representation' } });
@@ -257,7 +318,7 @@
     h, $, msg, fmtPrice, cover, setDownload, fixNav, config: C,
     get session() { return session; },
     auth: { signIn, signUp, verify, resend, recover, setPassword, signOut, loadUsername },
-    data: { games, news, library, claim, redeem, enqueueEmbed, outboxStatus }
+    data: { games, news, library, claim, redeem, enqueueEmbed, outboxStatus, myProfile, saveProfile, uploadProfileImage, searchProfiles, friendRequests, sendFriendRequest, respondFriendRequest }
   });
   document.addEventListener('DOMContentLoaded', fixNav);
 })();

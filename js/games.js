@@ -7,6 +7,12 @@
   let filter = 'all', items = [], owned = new Set();
   const signed = () => !!window.KOVO.session;
 
+  function successSound() {
+    const sound = new Audio('assets/audio/success.wav');
+    sound.volume = 0.52;
+    sound.play().catch(() => {});
+  }
+
   function toast(text, bad) {
     note.textContent = text; note.className = 'note ' + (bad ? 'err' : 'ok');
     setTimeout(() => { note.textContent = ''; note.className = 'note'; }, 4000);
@@ -16,7 +22,7 @@
     if (!signed()) { location.href = 'account.html'; return; }
     btn.disabled = true;
     const r = await window.KOVO.data.claim(g.id);
-    if (r.ok || r.error === 'already_owned') { owned.add(g.id); toast(g.title + ' agregado a tu biblioteca. Ábrelo desde el launcher.'); render(); }
+    if (r.ok || r.error === 'already_owned') { owned.add(g.id); toast(g.title + ' agregado a tu biblioteca. Ábrelo desde el launcher.'); if (r.ok) successSound(); render(); }
     else { btn.disabled = false; toast(msg(r.error), true); }
   }
 
