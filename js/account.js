@@ -242,20 +242,44 @@
     const accountIntro = h('header', { class: 'account-intro' },
       h('div', {}, h('p', { class: 'eyebrow', text: 'KOVO ACCOUNT' }), h('h1', { text: 'Tu espacio KOVO' }),
         h('p', { class: 'muted', text: 'Tu biblioteca, perfil y amistades, organizados en un solo lugar.' })));
-    root.replaceChildren(accountIntro, h('div', { class: 'dash account-grid' },
+    const overviewView = h('section', { class: 'account-view account-grid', role: 'tabpanel', id: 'account-view-overview', 'aria-labelledby': 'account-tab-overview' },
       h('section', { class: 'panel account-card account-identity', 'aria-labelledby': 'account-profile-title' },
         h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'TU CUENTA' }), h('h2', { id: 'account-profile-title', text: s.user.username }), h('p', { class: 'muted', text: s.user.email })),
         h('div', { class: 'row-btn' }, dl, s.user.isAdmin && h('a', { class: 'btn', href: 'admin.html', text: 'Administración Discord' }), h('button', { class: 'btn', type: 'button', text: 'Cerrar sesión', onclick: async () => { await K.auth.signOut(); location.reload(); } })), hint),
       h('section', { class: 'panel account-card account-redeem', 'aria-labelledby': 'redeem-title' },
         h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'AMPLÍA TU BIBLIOTECA' }), h('h2', { id: 'redeem-title', text: 'Canjear un código' }), h('p', { class: 'muted', text: 'Añade un código de juego o regalo a tu cuenta.' })), redeemForm, rmsg),
       h('section', { class: 'panel account-card account-library wide', 'aria-labelledby': 'library-title' },
-        h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'TUS JUEGOS' }), h('h2', { id: 'library-title', text: 'Mi biblioteca' }), h('p', { class: 'muted', text: 'Todos tus juegos, listos para descubrir.' })), libBox),
-      h('section', { class: 'panel account-card account-profile', 'aria-labelledby': 'profile-title' },
-        h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'TU IDENTIDAD' }), h('h2', { id: 'profile-title', text: 'Personaliza tu perfil' }), h('p', { class: 'muted', text: 'Elige cómo te ven otros jugadores.' })), profileForm),
-      h('section', { class: 'panel account-card account-friends', 'aria-labelledby': 'friends-title' },
-        h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'TU CÍRCULO' }), h('h2', { id: 'friends-title', text: 'Amigos y solicitudes' }), h('p', { class: 'muted', text: 'Conecta con la comunidad KOVO.' })), friendList),
+        h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'TUS JUEGOS' }), h('h2', { id: 'library-title', text: 'Mi biblioteca' }), h('p', { class: 'muted', text: 'Todos tus juegos, listos para descubrir.' })), libBox));
+    const profileView = h('section', { class: 'account-view account-grid', role: 'tabpanel', id: 'account-view-profile', 'aria-labelledby': 'account-tab-profile', hidden: true },
+      h('section', { class: 'panel account-card account-profile wide', 'aria-labelledby': 'profile-title' },
+        h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'TU IDENTIDAD' }), h('h2', { id: 'profile-title', text: 'Personaliza tu perfil' }), h('p', { class: 'muted', text: 'Elige cómo te ven otros jugadores.' })), profileForm));
+    const friendsView = h('section', { class: 'account-view account-grid', role: 'tabpanel', id: 'account-view-friends', 'aria-labelledby': 'account-tab-friends', hidden: true },
+      h('section', { class: 'panel account-card account-friends wide', 'aria-labelledby': 'friends-title' },
+        h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'TU CÍRCULO' }), h('h2', { id: 'friends-title', text: 'Amigos y solicitudes' }), h('p', { class: 'muted', text: 'Acepta solicitudes y consulta tus amistades.' })), friendList));
+    const searchView = h('section', { class: 'account-view account-grid', role: 'tabpanel', id: 'account-view-search', 'aria-labelledby': 'account-tab-search', hidden: true },
       h('section', { class: 'panel account-card account-search wide', 'aria-labelledby': 'search-title' },
-        h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'COMUNIDAD' }), h('h2', { id: 'search-title', text: 'Buscar jugadores' }), h('p', { class: 'muted', text: 'Encuentra perfiles públicos por su nombre de usuario.' })), searchForm, searchMsg, searchResults)));
+        h('div', { class: 'account-card-heading' }, h('p', { class: 'eyebrow', text: 'COMUNIDAD' }), h('h2', { id: 'search-title', text: 'Buscar jugadores' }), h('p', { class: 'muted', text: 'Encuentra perfiles públicos por su nombre de usuario.' })), searchForm, searchMsg, searchResults));
+    const tabInfo = [
+      ['overview', 'Resumen', overviewView], ['profile', 'Personalizar perfil', profileView],
+      ['friends', 'Amigos', friendsView], ['search', 'Buscar usuarios', searchView]
+    ];
+    const tabButtons = tabInfo.map(([id, label]) => h('button', { class: 'account-tab', id: 'account-tab-' + id, type: 'button', role: 'tab', 'aria-controls': 'account-view-' + id, 'aria-selected': String(id === 'overview'), tabindex: id === 'overview' ? '0' : '-1', text: label }));
+    const tabList = h('div', { class: 'account-tabs', role: 'tablist', 'aria-label': 'Secciones de tu cuenta' }, ...tabButtons);
+    const selectAccountTab = (index, focus) => {
+      const next = (index + tabInfo.length) % tabInfo.length;
+      tabInfo.forEach(([, , view], i) => { view.hidden = i !== next; });
+      tabButtons.forEach((button, i) => { button.setAttribute('aria-selected', String(i === next)); button.tabIndex = i === next ? 0 : -1; });
+      if (focus) tabButtons[next].focus();
+    };
+    tabButtons.forEach((button, index) => {
+      button.addEventListener('click', () => selectAccountTab(index, false));
+      button.addEventListener('keydown', (event) => {
+        const next = event.key === 'ArrowRight' ? index + 1 : event.key === 'ArrowLeft' ? index - 1 : event.key === 'Home' ? 0 : event.key === 'End' ? tabInfo.length - 1 : null;
+        if (next === null) return;
+        event.preventDefault(); selectAccountTab(next, true);
+      });
+    });
+    root.replaceChildren(accountIntro, tabList, overviewView, profileView, friendsView, searchView);
     setDownload(dl, hint);
 
     async function loadLibrary() {
