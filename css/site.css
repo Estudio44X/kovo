@@ -590,3 +590,15 @@ body,.top,.panel,.feat,.card,.news-item,details,.field,.btn,.chip,.legal-check,.
 :root[data-theme="light"] .dispatch-lead-copy time,:root[data-theme="light"] .dispatch-lead-copy h3,:root[data-theme="light"] .dispatch-lead-copy p,:root[data-theme="light"] .dispatch-main time,:root[data-theme="light"] .dispatch-main h3,:root[data-theme="light"] .dispatch-main p,:root[data-theme="light"] .dispatch-index,:root[data-theme="light"] .dispatch-arrow{color:#302c26}
 :root[data-theme="light"] .dispatch-item{border-color:rgba(48,44,38,.22)}
 :root[data-theme="light"] .dispatch-item:hover{background:rgba(255,255,255,.55)}
+/* Perfil: previsualización compacta del banner y avatar mientras se edita. */
+.profile-preview{position:relative;grid-column:1/-1;min-height:218px;padding:0 18px 14px;margin:4px 0 8px;border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}
+.profile-preview-banner{height:154px;margin:0 -18px;background:linear-gradient(135deg,var(--card2),var(--bg2));overflow:hidden}
+.profile-preview-banner img{width:100%;height:100%;object-fit:cover}
+.profile-preview-banner span{height:100%;display:grid;place-items:center;color:var(--mut);font-size:13px}
+.profile-preview-avatar{position:absolute;left:24px;top:112px;width:88px;height:88px;border:4px solid var(--card);border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--card2);color:var(--txt);font-size:27px;font-weight:700}
+.profile-preview-avatar img{width:100%;height:100%;object-fit:cover}
+.profile-preview>strong{position:absolute;left:128px;top:168px;color:var(--txt);font-size:17px}
+.profile-preview>small{position:absolute;left:128px;top:192px;color:var(--mut);font-size:12px}
+:root[data-theme="light"] .profile-preview{box-shadow:0 10px 28px rgba(28,32,38,.05)}
+:root[data-theme="light"] .profile-preview-banner{background:linear-gradient(135deg,#e6e9ee,#f5f6f8)}
+@media(max-width:620px){.profile-preview{min-height:200px}.profile-preview-banner{height:138px}.profile-preview-avatar{top:98px;width:80px;height:80px}.profile-preview>strong{left:118px;top:153px}.profile-preview>small{left:118px;top:177px}}
