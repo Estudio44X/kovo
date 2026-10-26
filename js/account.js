@@ -17,12 +17,12 @@
   }
 
   // Formulario genérico: título, texto, campos, botón principal y enlaces.
-  function screen({ title, text, fields, submit, onSubmit, links = [], notice = '', ok = false }) {
+  function screen({ title, text, fields, extras = [], submit, onSubmit, links = [], notice = '', ok = false }) {
     const err = h('p', { class: 'form-msg' + (ok ? ' ok' : ''), role: 'alert', text: notice });
     const setMsg = (m, good) => { err.textContent = m || ''; err.classList.toggle('ok', !!good); };
     const btn = h('button', { class: 'btn primary block', type: 'submit', text: submit });
     const form = h('form', { class: 'panel', novalidate: 'novalidate' },
-      h('h1', { text: title }), text && h('p', { class: 'muted', text }), ...fields.map((f) => f.node), err, btn,
+      h('h1', { text: title }), text && h('p', { class: 'muted', text }), ...fields.map((f) => f.node), ...extras, err, btn,
       links.length ? h('div', { class: 'links' }, ...links) : null);
     form.addEventListener('submit', async (e) => {
       e.preventDefault(); setMsg(''); btn.disabled = true;
@@ -54,12 +54,21 @@
     const email = field('Correo electrónico', { type: 'email', maxlength: '254' });
     const pass = field('Contraseña (mínimo 8)', { type: 'password', maxlength: '72', autocomplete: 'new-password' });
     const pass2 = field('Repite la contraseña', { type: 'password', maxlength: '72', autocomplete: 'new-password' });
+    const acceptTerms = h('input', { type: 'checkbox', required: 'required' });
+    const acceptPrivacy = h('input', { type: 'checkbox', required: 'required' });
+    const legalChecks = h('div', { class: 'legal-checks' },
+      h('label', { class: 'legal-check' }, acceptTerms,
+        h('span', {}, 'Acepto los ', h('a', { href: 'legal.html#terminos', target: '_blank', rel: 'noopener noreferrer' }, 'términos y condiciones'), '.')),
+      h('label', { class: 'legal-check' }, acceptPrivacy,
+        h('span', {}, 'Autorizo el tratamiento descrito en la ', h('a', { href: 'legal.html#privacidad', target: '_blank', rel: 'noopener noreferrer' }, 'política de privacidad'), '.')));
     screen({
       title: 'Crear cuenta', fields: [user, email, pass, pass2], submit: 'Crear cuenta',
+      extras: [legalChecks],
       links: [link('Ya tengo cuenta', () => signin())],
       onSubmit: async (setMsg) => {
+        if (!acceptTerms.checked || !acceptPrivacy.checked) { setMsg('Acepta por separado los términos y la política de privacidad para crear la cuenta.'); return; }
         if (pass.input.value !== pass2.input.value) { setMsg('Las contraseñas no coinciden.'); return; }
-        const r = await K.auth.signUp(email.input.value.trim(), pass.input.value, user.input.value.trim());
+        const r = await K.auth.signUp(email.input.value.trim(), pass.input.value, user.input.value.trim(), { acceptedTerms: acceptTerms.checked, acceptedPrivacy: acceptPrivacy.checked, source: 'web' });
         if (!r.ok) { setMsg(msg(r.error)); return; }
         pass.input.value = ''; pass2.input.value = '';
         if (r.needsConfirm) { pending = email.input.value.trim().toLowerCase(); verifyScreen('Cuenta creada. Te enviamos un código a tu correo.', true); return; }
@@ -119,6 +128,7 @@
   }
 
   async function dashboard() {
+    await K.auth.loadUsername();
     const s = K.session;
     if (!s) { signin(); return; }
     const nav = $('#nav-account'); if (nav) nav.textContent = s.user.username;
@@ -139,7 +149,7 @@
 
     root.replaceChildren(h('div', { class: 'dash' },
       h('div', { class: 'panel' }, h('h1', { text: s.user.username }), h('p', { class: 'muted', text: s.user.email }),
-        h('div', { class: 'row-btn' }, dl, h('button', { class: 'btn', type: 'button', text: 'Cerrar sesión', onclick: async () => { await K.auth.signOut(); location.reload(); } })), hint),
+        h('div', { class: 'row-btn' }, dl, s.user.isAdmin && h('a', { class: 'btn', href: 'admin.html', text: 'Administración Discord' }), h('button', { class: 'btn', type: 'button', text: 'Cerrar sesión', onclick: async () => { await K.auth.signOut(); location.reload(); } })), hint),
       h('div', { class: 'panel' }, h('h2', { text: 'Canjear código' }), redeemForm, rmsg),
       h('div', { class: 'panel wide' }, h('h2', { text: 'Mi biblioteca' }), libBox)));
     setDownload(dl, hint);

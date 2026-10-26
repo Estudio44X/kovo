@@ -35,11 +35,12 @@
   try { const s = JSON.parse(sessionStorage.getItem(SKEY)); if (s && typeof s.access_token === 'string') session = s; } catch { /* sin sesión */ }
   const save = () => { try { session ? sessionStorage.setItem(SKEY, JSON.stringify(session)) : sessionStorage.removeItem(SKEY); } catch { /* ignorar */ } };
 
-  async function http(method, path, { token, body } = {}) {
+  async function http(method, path, { token, body, extraHeaders = {} } = {}) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
     try {
       const headers = { apikey: C.SUPABASE_KEY, 'Content-Type': 'application/json' };
+      Object.assign(headers, extraHeaders);
       const bearer = token || (C.SUPABASE_KEY.startsWith('eyJ') ? C.SUPABASE_KEY : null);
       if (bearer) headers.Authorization = 'Bearer ' + bearer;
       const res = await fetch(BASE + path, { method, headers, signal: ctrl.signal, redirect: 'error', credentials: 'omit', body: body === undefined ? undefined : JSON.stringify(body) });
@@ -66,7 +67,7 @@
   }
 
   const MESSAGES = {
-    network: 'No hay conexión con el servidor.', invalid_credentials: 'Correo o contraseña incorrectos.',
+    network: 'No hay conexión con el servidor.', invalid_credentials: 'Correo o contraseña incorrectos.', consent_required: 'Acepta por separado los términos y la política de privacidad.',
     email_not_confirmed: 'Confirma tu correo antes de iniciar sesión.', user_exists: 'Ese correo ya está registrado.',
     weak_password: 'La contraseña debe tener al menos 8 caracteres.', same_password: 'La nueva contraseña debe ser distinta a la anterior.',
     invalid_otp: 'Código incorrecto o vencido.', rate_limited: 'Demasiados intentos. Espera un momento.',
@@ -107,16 +108,16 @@
     await refreshing;
     return session && Date.now() < session.expires_at ? session.access_token : null;
   }
-  async function authed(method, path, body) {
+  async function authed(method, path, body, options = {}) {
     const token = await ensureToken();
     if (!token) return { ok: false, status: 401, data: null, network: false };
-    return http(method, path, { token, body });
+    return http(method, path, { ...options, token, body });
   }
 
   async function loadUsername() {
     if (!session) return;
-    const r = await authed('GET', '/rest/v1/profiles?select=username&id=eq.' + encodeURIComponent(session.user.id));
-    if (r.ok && Array.isArray(r.data) && r.data[0] && USER_RE.test(String(r.data[0].username))) { session.user.username = r.data[0].username; save(); }
+    const r = await authed('GET', '/rest/v1/profiles?select=username,is_admin&id=eq.' + encodeURIComponent(session.user.id));
+    if (r.ok && Array.isArray(r.data) && r.data[0] && USER_RE.test(String(r.data[0].username))) { session.user.username = r.data[0].username; session.user.isAdmin = r.data[0].is_admin === true; save(); }
   }
 
   /* ---------- Cuenta ---------- */
@@ -128,13 +129,17 @@
     fails = 0; applyTokens(r.data); await loadUsername();
     return { ok: true };
   }
-  async function signUp(email, password, username) {
+  async function signUp(email, password, username, consent) {
     if (!EMAIL_RE.test(email)) return { ok: false, error: 'invalid_input' };
     if (!USER_RE.test(username)) return { ok: false, error: 'invalid_username' };
     if (password.length < 8 || password.length > 72) return { ok: false, error: 'weak_password' };
+    if (!consent || consent.acceptedTerms !== true || consent.acceptedPrivacy !== true || consent.source !== 'web') return { ok: false, error: 'consent_required' };
     const av = await http('POST', '/rest/v1/rpc/username_available', { body: { p_username: username } });
     if (av.ok && av.data === false) return { ok: false, error: 'username_taken' };
-    const r = await http('POST', '/auth/v1/signup', { body: { email: email.toLowerCase(), password, data: { username } } });
+    const r = await http('POST', '/auth/v1/signup', { body: { email: email.toLowerCase(), password, data: {
+      username, accepted_terms: true, accepted_privacy: true,
+      terms_version: '2026-10-25-v1', privacy_version: '2026-10-25-v1', acceptance_source: 'web'
+    } } });
     if (!r.ok) return { ok: false, error: mapError(r) };
     const d = r.data || {};
     if (Array.isArray(d.identities) && d.identities.length === 0) return { ok: false, error: 'user_exists' };
@@ -217,6 +222,18 @@
   const claim = (id) => (GAME_RE.test(id) ? rpc('claim_free_game', { p_game_id: id }) : Promise.resolve({ ok: false, error: 'invalid_input' }));
   const redeem = (code) => { const c = String(code || '').trim().toUpperCase(); return CODE_RE.test(c) ? rpc('redeem_code', { p_code: c }) : Promise.resolve({ ok: false, error: 'invalid_code' }); };
 
+  async function enqueueEmbed(channelId, payload) {
+    if (!session || !/^\d{17,20}$/.test(String(channelId))) return { ok: false, error: 'invalid_input' };
+    const r = await authed('POST', '/rest/v1/bot_outbox?select=id', { requested_by: session.user.id, kind: 'embed', target_channel: String(channelId), payload, status: 'queued' }, { extraHeaders: { Prefer: 'return=representation' } });
+    return r.ok && Array.isArray(r.data) && r.data[0] ? { ok: true, id: r.data[0].id } : { ok: false, error: r.status === 401 ? 'unauthorized' : 'forbidden' };
+  }
+
+  async function outboxStatus(id) {
+    if (!UUID_RE.test(String(id))) return null;
+    const r = await authed('GET', '/rest/v1/bot_outbox?select=status,result&id=eq.' + encodeURIComponent(id));
+    return r.ok && Array.isArray(r.data) && r.data[0] ? r.data[0] : null;
+  }
+
   /* ---------- Utilidades de interfaz ---------- */
   const fmtPrice = (n) => (n === 0 ? 'Gratis' : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n));
   function cover(g) {
@@ -226,8 +243,8 @@
   }
   function setDownload(a, hint) {
     if (!a) return;
-    if (C.DOWNLOAD_URL && /^https:\/\//.test(C.DOWNLOAD_URL)) { a.href = C.DOWNLOAD_URL; a.rel = 'noopener noreferrer'; }
-    else { a.removeAttribute('href'); a.classList.add('disabled'); a.setAttribute('aria-disabled', 'true'); if (hint) hint.textContent = 'La descarga estará disponible muy pronto.'; }
+    if (C.DOWNLOAD_URL && /^https:\/\//.test(C.DOWNLOAD_URL)) { a.hidden = false; a.href = C.DOWNLOAD_URL; a.rel = 'noopener noreferrer'; }
+    else { a.hidden = true; a.removeAttribute('href'); a.classList.add('disabled'); a.setAttribute('aria-disabled', 'true'); if (hint) hint.textContent = 'El enlace oficial de descarga del launcher estará disponible pronto.'; }
   }
   function fixNav() {
     const link = $('#nav-account');
@@ -240,7 +257,7 @@
     h, $, msg, fmtPrice, cover, setDownload, fixNav, config: C,
     get session() { return session; },
     auth: { signIn, signUp, verify, resend, recover, setPassword, signOut, loadUsername },
-    data: { games, news, library, claim, redeem }
+    data: { games, news, library, claim, redeem, enqueueEmbed, outboxStatus }
   });
   document.addEventListener('DOMContentLoaded', fixNav);
 })();
