@@ -337,7 +337,7 @@
     h, $, msg, fmtPrice, cover, setDownload, fixNav, config: C,
     get session() { return session; },
     auth: { signIn, signUp, verify, resend, recover, setPassword, signOut, loadUsername },
-    data: { games, news, library, claim, redeem, enqueueEmbed, outboxStatus, myProfile, saveProfile, uploadProfileImage, searchProfiles, friendRequests, sendFriendRequest, respondFriendRequest }
+    data: { games, news, library, claim, redeem, enqueueEmbed, outboxStatus, myProfile, saveProfile, uploadProfileImage, signedProfileImage, searchProfiles, friendRequests, sendFriendRequest, respondFriendRequest }
   });
   document.addEventListener('DOMContentLoaded', fixNav);
 })();
