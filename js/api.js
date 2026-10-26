@@ -30,11 +30,24 @@
   }
   const $ = (s) => document.querySelector(s);
 
-  /* ---------- Sesión (solo esta pestaña: sessionStorage) ---------- */
+  /* ---------- Sesión persistente en este dispositivo; se borra al cerrar sesión ---------- */
   let session = null;
-  try { const s = JSON.parse(sessionStorage.getItem(SKEY)); if (s && typeof s.access_token === 'string') session = s; } catch { /* sin sesión */ }
-  const save = () => { try { session ? sessionStorage.setItem(SKEY, JSON.stringify(session)) : sessionStorage.removeItem(SKEY); } catch { /* ignorar */ } };
-
+  try {
+    let raw = localStorage.getItem(SKEY);
+    if (!raw) {
+      raw = sessionStorage.getItem(SKEY);
+      if (raw) { localStorage.setItem(SKEY, raw); sessionStorage.removeItem(SKEY); }
+    }
+    const saved = JSON.parse(raw || 'null');
+    if (saved && typeof saved.access_token === 'string' && typeof saved.refresh_token === 'string') session = saved;
+  } catch { /* el almacenamiento puede estar deshabilitado */ }
+  const save = () => {
+    try {
+      if (session) localStorage.setItem(SKEY, JSON.stringify(session));
+      else localStorage.removeItem(SKEY);
+      sessionStorage.removeItem(SKEY);
+    } catch { /* la sesión sigue viva en memoria */ }
+  };
   async function http(method, path, { token, body, extraHeaders = {} } = {}) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 15000);
@@ -59,6 +72,7 @@
     if (code === 'email_not_confirmed' || msg.includes('not confirmed')) return 'email_not_confirmed';
     if (code === 'user_already_exists' || msg.includes('already registered')) return 'user_exists';
     if (code === 'weak_password') return 'weak_password';
+    if (msg.includes('legal_acceptance_required')) return 'schema_update_required';
     if (r.status === 500 && (msg.includes('email') || msg.includes('smtp') || code === 'unexpected_failure')) return 'email_delivery_failed';
     if (code === 'same_password') return 'same_password';
     if (code === 'otp_expired' || msg.includes('invalid or has expired') || msg.includes('token has expired')) return 'invalid_otp';
@@ -69,7 +83,7 @@
 
   const MESSAGES = {
     network: 'No hay conexión con el servidor.', invalid_credentials: 'Correo o contraseña incorrectos.', consent_required: 'Acepta por separado los términos y la política de privacidad.', email_delivery_failed: 'El correo de confirmacion de KOVO no pudo enviarse. La cuenta puede haberse creado. Corrige el servicio de correo y luego usa la opcion Reenviar codigo; no registres otra vez el mismo correo.',
-    email_not_confirmed: 'Confirma tu correo antes de iniciar sesión.', user_exists: 'Ese correo ya está registrado.',
+    schema_update_required: 'La base de datos necesita la migración legal actualizada antes de crear cuentas. Contacta al administrador de KOVO.', email_not_confirmed: 'Confirma tu correo antes de iniciar sesión.', user_exists: 'Ese correo ya está registrado.',
     weak_password: 'La contraseña debe tener al menos 8 caracteres.', same_password: 'La nueva contraseña debe ser distinta a la anterior.',
     invalid_otp: 'Código incorrecto o vencido.', rate_limited: 'Demasiados intentos. Espera un momento.',
     unauthorized: 'Tu sesión expiró. Inicia sesión de nuevo.', invalid_input: 'Revisa los datos ingresados.',
@@ -139,7 +153,7 @@
     if (av.ok && av.data === false) return { ok: false, error: 'username_taken' };
     const r = await http('POST', '/auth/v1/signup', { body: { email: email.toLowerCase(), password, data: {
       username, accepted_terms: true, accepted_privacy: true,
-      terms_version: '2026-10-26-v2', privacy_version: '2026-10-26-v2', acceptance_source: 'web'
+      terms_version: '2026-10-26-v2', privacy_version: '2026-10-26-v3', acceptance_source: 'web'
     } } });
     if (!r.ok) return { ok: false, error: mapError(r) };
     const d = r.data || {};
@@ -309,7 +323,12 @@
   }
   function fixNav() {
     const link = $('#nav-account');
-    if (link && session) link.textContent = session.user.username;
+    if (link) {
+      const label = session ? session.user.username : 'Iniciar sesión';
+      const arrow = link.querySelector('span');
+      if (arrow) link.replaceChildren(document.createTextNode(label + ' '), arrow);
+      else link.textContent = label;
+    }
     const d = $('#discord-link');
     if (d) { if (C.DISCORD_URL && /^https:\/\//.test(C.DISCORD_URL)) { d.href = C.DISCORD_URL; d.rel = 'noopener noreferrer'; d.target = '_blank'; } else d.remove(); }
   }
@@ -322,3 +341,4 @@
   });
   document.addEventListener('DOMContentLoaded', fixNav);
 })();
+
