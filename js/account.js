@@ -158,7 +158,35 @@
     const bannerFile = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', class: 'field' });
     const profilePublic = h('input', { type: 'checkbox' });
     const profileMsg = h('p', { class: 'form-msg', role: 'status' });
+    const bannerPreview = h('div', { class: 'profile-preview-banner' }, h('span', { text: 'Tu banner aparecerá aquí' }));
+    const avatarPreview = h('div', { class: 'profile-preview-avatar' }, h('span', { text: (s.user.username || 'K').slice(0, 1).toUpperCase() }));
+    const profilePreview = h('div', { class: 'profile-preview' }, bannerPreview, avatarPreview, h('strong', { text: s.user.username }), h('small', { text: 'Previsualización de tu perfil' }));
+    let avatarObjectUrl = '', bannerObjectUrl = '', pickedAvatar = false, pickedBanner = false;
+    const previewSelected = (input, target, kind) => {
+      input.addEventListener('change', () => {
+        const selected = input.files && input.files[0];
+        if (!selected) return;
+        if (!['image/png','image/jpeg','image/webp'].includes(selected.type) || selected.size > 3145728) { profileMsg.textContent = 'El archivo debe ser PNG, JPG o WebP y pesar hasta 3 MB.'; input.value = ''; return; }
+        const url = URL.createObjectURL(selected);
+        if (kind === 'avatar') { if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl); avatarObjectUrl = url; pickedAvatar = true; }
+        else { if (bannerObjectUrl) URL.revokeObjectURL(bannerObjectUrl); bannerObjectUrl = url; pickedBanner = true; }
+        target.replaceChildren(h('img', { src: url, alt: kind === 'avatar' ? 'Vista previa de foto de perfil' : 'Vista previa del banner' }));
+        profileMsg.textContent = '';
+      });
+    };
+    previewSelected(avatarFile, avatarPreview, 'avatar');
+    previewSelected(bannerFile, bannerPreview, 'banner');
+    K.data.myProfile().then(async (result) => {
+      if (!result.ok) return;
+      const profile = result.profile;
+      bio.input.value = profile.bio || '';
+      profilePublic.checked = profile.profile_public === true;
+      const [avatarUrl, bannerUrl] = await Promise.all([K.data.signedProfileImage(profile.avatar_url), K.data.signedProfileImage(profile.banner_url)]);
+      if (avatarUrl && !pickedAvatar) avatarPreview.replaceChildren(h('img', { src: avatarUrl, alt: 'Foto de perfil actual' }));
+      if (bannerUrl && !pickedBanner) bannerPreview.replaceChildren(h('img', { src: bannerUrl, alt: 'Banner actual' }));
+    }).catch(() => {});
     const profileForm = h('form', { class: 'profile-form wide' },
+      profilePreview,
       bio.node,
       h('label', { class: 'lbl' }, h('span', { text: 'Foto de perfil · PNG, JPG o WebP · máximo 3 MB' }), avatarFile),
       h('label', { class: 'lbl' }, h('span', { text: 'Banner · PNG, JPG o WebP · máximo 3 MB' }), bannerFile),
