@@ -588,3 +588,12 @@ body,.top,.panel,.feat,.card,.news-item,details,.field,.btn,.chip,.legal-check,.
 :root[data-theme="light"] .halloween-showreel{background:#090b16;color:#f4f1eb}:root[data-theme="light"] .halloween-showreel .showreel-label,:root[data-theme="light"] .halloween-showreel h1,:root[data-theme="light"] .halloween-showreel .showreel-count{color:inherit}:root[data-theme="light"] .halloween-showreel .showreel-description,:root[data-theme="light"] .halloween-showreel .scroll-hint{color:#e1d8d4}:root[data-theme="light"] .halloween-showreel .scroll-hint-line{background:#e1d8d4}
 @media(max-width:760px){.halloween-showreel{height:calc(100svh - 61px);min-height:640px;max-height:810px;padding:100px 24px 114px}.halloween-moon{top:13%;right:5%;width:clamp(130px,40vw,210px);opacity:.78}.halloween-cloud-back{top:42%}.halloween-cloud-front{top:59%}.halloween-ridge{height:17%}.halloween-showreel .showreel-copy{width:100%;padding-bottom:0}.halloween-showreel h1{font-size:clamp(58px,15vw,84px)}.halloween-showreel .showreel-label{font-size:9px}.halloween-showreel .showreel-description{max-width:330px;font-size:13px}}
 @media(prefers-reduced-motion:reduce){.halloween-stars,.halloween-cloud,.halloween-glow{animation:none!important;will-change:auto}}
+
+/* Keep the Halloween scene controls apart and above the landscape. */
+.halloween-scene{z-index:0}
+.halloween-showreel .showreel-copy{z-index:2}
+.halloween-showreel .scroll-hint{z-index:2;bottom:46px}
+.halloween-showreel .showreel-count{top:auto;right:max(7.5vw,calc((100vw - 1460px)/2));bottom:42px;z-index:2;writing-mode:horizontal-tb;transform:none;text-align:right}
+.halloween-showreel .showreel-count span{display:block;margin:5px 0 0}
+.halloween-showreel .pill-action{min-height:48px;padding:0 22px;border-radius:999px}
+.halloween-showreel .pill-outline{border-color:rgba(255,255,255,.48);color:#f4eee5}
