@@ -4,10 +4,6 @@
   const { h, $, fmtPrice, setDownload } = window.KOVO;
   const palette = ['#d96d41', '#9a7762', '#6c9a62', '#769ad6', '#b491dd', '#df8e43'];
   const featured = $('#featured'), news = $('#news');
-  const leadImage = $('#showreel-image');
-  const title = $('#showreel-title'), label = $('#showreel-label'), description = $('#showreel-description');
-  const controls = $('#showreel-controls'), pagination = $('#reel-pagination'), counter = $('#showreel-count');
-  const showreel = $('.showreel'), copy = $('#showreel-copy');
   const downloadLinks = [$('#dl'), $('#header-dl')];
   downloadLinks.forEach((link, index) => {
     if (index === 0) setDownload(link, $('#dl-hint'));
@@ -59,68 +55,10 @@
     news.replaceChildren(lead, rest);
   }
 
-  function setupReel(games) {
-    if (!games.length) return;
-    const slides = games.slice(0, 5);
-    let active = 0, paused = !motionAllowed, timer = 0;
-    controls.hidden = slides.length < 2;
-    const toggle = $('#reel-toggle');
-    toggle.setAttribute('aria-pressed', String(paused));
-    toggle.setAttribute('aria-label', paused ? 'Reanudar rotación automática' : 'Pausar rotación automática');
-    toggle.querySelector('span').textContent = paused ? '▶' : 'Ⅱ';
-    const dots = slides.map((game, index) => {
-      const button = h('button', { class: 'reel-dot', type: 'button', 'aria-label': 'Mostrar ' + game.title, 'aria-current': index === 0 ? 'true' : 'false' });
-      button.addEventListener('click', () => show(index, true));
-      pagination.append(button);
-      return button;
-    });
-
-    function show(next, fromUser = false) {
-      active = (next + slides.length) % slides.length;
-      const game = slides[active];
-      copy.classList.add('is-changing');
-      showreel.classList.add('is-changing');
-      window.setTimeout(() => {
-        leadImage.src = gameImage(game);
-        label.textContent = game.genre || 'JUEGO DESTACADO';
-        title.textContent = game.title;
-        description.textContent = game.desc || 'Descubre ' + game.title + ' en KOVO Interactive.';
-        showreel.dataset.accent = String(active % palette.length);
-        counter.replaceChildren(document.createTextNode('KOVO '), h('span', { text: String(active + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0') }));
-        dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === active)));
-        copy.classList.remove('is-changing');
-        showreel.classList.remove('is-changing');
-      }, motionAllowed ? 120 : 0);
-      if (fromUser) resetTimer();
-    }
-    function startTimer() {
-      window.clearInterval(timer);
-      if (!paused && slides.length > 1) timer = window.setInterval(() => show(active + 1), 7200);
-    }
-    function resetTimer() { startTimer(); }
-    $('#reel-prev').addEventListener('click', () => show(active - 1, true));
-    $('#reel-next').addEventListener('click', () => show(active + 1, true));
-    toggle.addEventListener('click', (event) => {
-      paused = !paused;
-      event.currentTarget.setAttribute('aria-pressed', String(paused));
-      event.currentTarget.setAttribute('aria-label', paused ? 'Reanudar rotación automática' : 'Pausar rotación automática');
-      event.currentTarget.querySelector('span').textContent = paused ? '▶' : 'Ⅱ';
-      startTimer();
-    });
-    showreel.addEventListener('mouseenter', () => window.clearInterval(timer));
-    showreel.addEventListener('mouseleave', startTimer);
-    showreel.addEventListener('focusin', () => window.clearInterval(timer));
-    showreel.addEventListener('focusout', (event) => { if (!showreel.contains(event.relatedTarget)) startTimer(); });
-    document.addEventListener('visibilitychange', () => document.hidden ? window.clearInterval(timer) : startTimer());
-    show(0);
-    startTimer();
-  }
-
   async function init() {
     const [gamesResult, newsResult] = await Promise.all([window.KOVO.data.games(), window.KOVO.data.news()]);
     const games = gamesResult.ok ? gamesResult.items : [];
     if (games.length) {
-      setupReel(games);
       featured.replaceChildren(...games.slice(0, 4).map(renderWorld));
     } else {
       featured.replaceChildren(h('p', { class: 'catalog-message', text: gamesResult.ok ? 'Estamos preparando los primeros lanzamientos. Vuelve pronto.' : 'El catálogo no está disponible ahora. Inténtalo de nuevo más tarde.' }));
