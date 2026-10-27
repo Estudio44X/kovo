@@ -33,8 +33,8 @@
     else action = h('span', { class: 'tag', text: 'Compra próximamente' });
     return h('article', { id: g.id, class: 'card', 'data-reveal': '' },
       h('div', { class: 'cover' }, cover(g), g.price === 0 && h('span', { class: 'badge free', text: 'Gratis' })),
-      h('div', { class: 'body' }, h('h3', { text: g.title }), h('div', { class: 'meta', text: g.genre + (g.size ? ' · ' + g.size : '') }),
-        h('p', { class: 'desc', text: g.desc }), h('div', { class: 'row' }, h('span', { class: 'price', text: fmtPrice(g.price) }), action)));
+      h('div', { class: 'body' }, h('h3', {}, h('a', { class: 'game-title-link', href: 'game.html?id=' + encodeURIComponent(g.id), text: g.title })), h('div', { class: 'meta', text: g.genre + (g.size ? ' · ' + g.size : '') }),
+        h('p', { class: 'desc', text: g.desc }), h('div', { class: 'row' }, h('a', { class: 'btn small', href: 'game.html?id=' + encodeURIComponent(g.id), text: 'Ver juego' }), h('span', { class: 'price', text: fmtPrice(g.price) }), action)));
   }
 
   function render() {
