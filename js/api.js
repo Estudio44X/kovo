@@ -208,14 +208,15 @@
   const coverOk = (u) => (typeof u === 'string' && u.length < 400 && u.startsWith(BASE + '/storage/v1/object/public/') ? u : null);
   const normGame = (x) => (!x || !GAME_RE.test(String(x.id)) ? null : {
     id: x.id, title: str(x.title, 60), genre: str(x.genre, 30), price: Math.max(0, parseInt(x.price_cop, 10) || 0),
-    size: str(x.size_label, 20), version: str(x.version, 20), desc: str(x.desc_es, 300), cover: coverOk(x.cover_url)
+    size: str(x.size_label, 20), version: str(x.version, 20), desc: str(x.desc_es, 300), cover: coverOk(x.cover_url),
+    banner: coverOk(x.banner_url), icon: coverOk(x.icon_url), music: coverOk(x.music_url)
   });
   const normNews = (x) => (!x || !UUID_RE.test(String(x.id)) || !DATE_RE.test(String(x.published_at)) ? null : {
     id: x.id, date: x.published_at, title: str(x.title_es, 90), text: str(x.text_es, 400), cover: GAME_RE.test(String(x.cover_game_id)) ? x.cover_game_id : null
   });
 
   async function games() {
-    const r = await http('GET', '/rest/v1/games?select=id,title,genre,desc_es,price_cop,size_label,version,cover_url&published=eq.true&order=created_at.asc');
+    const r = await http('GET', '/rest/v1/games?select=id,title,genre,desc_es,price_cop,size_label,version,cover_url,banner_url,icon_url,music_url&published=eq.true&order=created_at.asc');
     return r.ok && Array.isArray(r.data) ? { ok: true, items: r.data.map(normGame).filter(Boolean) } : { ok: false, error: r.network ? 'network' : 'unknown' };
   }
   async function news() {
@@ -283,7 +284,12 @@
     const select='select=id,requester,recipient,status,created_at,requester_profile:profiles!friend_requests_requester_fkey(username,avatar_url),recipient_profile:profiles!friend_requests_recipient_fkey(username,avatar_url)';
     const filter='&or=(requester.eq.'+encodeURIComponent(session.user.id)+',recipient.eq.'+encodeURIComponent(session.user.id)+')&order=created_at.desc&limit=80';
     const r=await authed('GET','/rest/v1/friend_requests?'+select+filter);
-    return r.ok&&Array.isArray(r.data)?{ok:true,items:r.data}:{ok:false,error:r.network?'network':'unknown',items:[]};
+    if(!r.ok||!Array.isArray(r.data))return {ok:false,error:r.network?'network':'unknown',items:[]};
+    const items=await Promise.all(r.data.map(async item=>({ ...item,
+      requester_profile:item.requester_profile?{...item.requester_profile,avatar_url:await signedProfileImage(item.requester_profile.avatar_url)}:null,
+      recipient_profile:item.recipient_profile?{...item.recipient_profile,avatar_url:await signedProfileImage(item.recipient_profile.avatar_url)}:null
+    })));
+    return {ok:true,items};
   }
   async function sendFriendRequest(target) {
     if(!session||!UUID_RE.test(String(target)))return {ok:false,error:'invalid_input'};
@@ -341,4 +347,3 @@
   });
   document.addEventListener('DOMContentLoaded', fixNav);
 })();
-
