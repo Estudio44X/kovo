@@ -83,7 +83,7 @@
 
   const MESSAGES = {
     network: 'No hay conexión con el servidor.', invalid_credentials: 'Correo o contraseña incorrectos.', consent_required: 'Acepta por separado los términos y la política de privacidad.', email_delivery_failed: 'El correo de confirmacion de KOVO no pudo enviarse. La cuenta puede haberse creado. Corrige el servicio de correo y luego usa la opcion Reenviar codigo; no registres otra vez el mismo correo.',
-    schema_update_required: 'La base de datos necesita la migración legal actualizada antes de crear cuentas. Contacta al administrador de KOVO.', email_not_confirmed: 'Confirma tu correo antes de iniciar sesión.', user_exists: 'Ese correo ya está registrado.',
+    schema_update_required: 'Falta aplicar la migración legal v3 de Supabase. Ejecuta 20261026_privacy_v3.sql y vuelve a crear la cuenta. Si ya la aplicaste, publica la versión actual de la web y recarga la página.', email_not_confirmed: 'Confirma tu correo antes de iniciar sesión.', user_exists: 'Ese correo ya está registrado.',
     weak_password: 'La contraseña debe tener al menos 8 caracteres.', same_password: 'La nueva contraseña debe ser distinta a la anterior.',
     invalid_otp: 'Código incorrecto o vencido.', rate_limited: 'Demasiados intentos. Espera un momento.',
     unauthorized: 'Tu sesión expiró. Inicia sesión de nuevo.', invalid_input: 'Revisa los datos ingresados.',
