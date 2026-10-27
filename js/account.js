@@ -251,19 +251,40 @@
       const accepted = data.items.filter(x => x.status === 'accepted');
       const incoming = data.items.filter(x => x.status === 'pending' && x.recipient === me);
       const outgoing = data.items.filter(x => x.status === 'pending' && x.requester === me);
-      for (const req of incoming) {
-        const other = req.requester_profile || {};
-        friendList.append(h('article', { class: 'social-item' }, h('div', { class: 'social-copy' }, h('strong', { text: other.username || 'Usuario' }), h('p', { text: 'Quiere agregarte como amigo.' })),
-          h('button', { class: 'btn small', type: 'button', text: 'Aceptar', onclick: async () => { await K.data.respondFriendRequest(req.id, true); loadSocial(); } }),
-          h('button', { class: 'btn small', type: 'button', text: 'Rechazar', onclick: async () => { await K.data.respondFriendRequest(req.id, false); loadSocial(); } })));
+      const person = (profile, fallback='Jugador') => profile && profile.avatar_url
+        ? h('img', { class: 'social-avatar', src: profile.avatar_url, alt: 'Foto de ' + (profile.username || fallback) })
+        : h('span', { class: 'social-avatar placeholder', text: (profile && profile.username || fallback).slice(0,1).toUpperCase() });
+      const section = (label, count) => h('h3', { class: 'social-section-title', text: label + (count ? ' · ' + count : '') });
+      if (incoming.length) {
+        friendList.append(section('Solicitudes recibidas', incoming.length));
+        for (const req of incoming) {
+          const other = req.requester_profile || {};
+          friendList.append(h('article', { class: 'social-item' }, person(other), h('div', { class: 'social-copy' }, h('strong', { text: other.username || 'Jugador' }), h('p', { text: 'Te envió una solicitud de amistad.' })),
+            h('button', { class: 'btn small primary', type: 'button', text: 'Aceptar', onclick: async () => { const r=await K.data.respondFriendRequest(req.id,true); if(!r.ok)searchMsg.textContent='No se pudo aceptar la solicitud.'; loadSocial(); } }),
+            h('button', { class: 'btn small', type: 'button', text: 'Rechazar', onclick: async () => { const r=await K.data.respondFriendRequest(req.id,false); if(!r.ok)searchMsg.textContent='No se pudo rechazar la solicitud.'; loadSocial(); } })));
+        }
       }
-      for (const req of accepted) {
-        const other = req.requester === me ? req.recipient_profile : req.requester_profile;
-        friendList.append(h('article', { class: 'social-item' }, h('div', { class: 'social-copy' }, h('strong', { text: (other && other.username) || 'Amigo' }), h('p', { text: 'Amigos' }))));
+      if (accepted.length) {
+        friendList.append(section('Tus amigos', accepted.length));
+        for (const req of accepted) {
+          const other = req.requester === me ? req.recipient_profile : req.requester_profile;
+          friendList.append(h('article', { class: 'social-item' }, person(other), h('div', { class: 'social-copy' }, h('strong', { text: (other && other.username) || 'Jugador' }), h('p', { text: 'Amigo de KOVO' }))));
+        }
       }
-      for (const req of outgoing) {
-        const other = req.recipient_profile || {};
-        friendList.append(h('article', { class: 'social-item' }, h('div', { class: 'social-copy' }, h('strong', { text: other.username || 'Usuario' }), h('p', { text: 'Solicitud enviada' }))));
+      if (outgoing.length) {
+        friendList.append(section('Solicitudes enviadas', outgoing.length));
+        for (const req of outgoing) {
+          const other = req.recipient_profile || {};
+          friendList.append(h('article', { class: 'social-item' }, person(other), h('div', { class: 'social-copy' }, h('strong', { text: other.username || 'Jugador' }), h('p', { text: 'Solicitud pendiente' }))));
+        }
+      }
+      const pending = incoming.length + outgoing.length;
+      const friendsTab = document.getElementById('account-tab-friends');
+      if (friendsTab) {
+        let badge = friendsTab.querySelector('.tab-count');
+        if (pending && !badge) { badge = h('span', { class: 'tab-count' }); friendsTab.append(badge); }
+        if (badge) { badge.textContent = pending ? String(pending) : ''; badge.hidden = pending === 0; }
+        friendsTab.setAttribute('aria-label', pending ? 'Amigos, ' + pending + ' solicitudes pendientes' : 'Amigos');
       }
       if (!friendList.children.length) friendList.append(h('p', { class: 'muted', text: 'Todavía no tienes solicitudes ni amigos.' }));
     }
@@ -327,4 +348,3 @@
   else if (K.session) dashboard();
   else signin(linkError);
 })();
-
