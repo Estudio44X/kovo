@@ -46,3 +46,8 @@ En `config.js` del launcher escribe:
 - Las claves de `js/config.js` son públicas por diseño. Nunca pongas la clave `secret`.
 - Windows mostrará "SmartScreen" con instaladores sin firma. Firmar cuesta dinero.
 - Verifica en producción las cookies del hosting y Supabase. El código fuente revisado no incluye analítica ni cookies publicitarias; la configuración final debe confirmarse antes del lanzamiento.
+
+
+### Error de registro: migración legal
+
+Si aparece el aviso de migración legal, en el SQL Editor de Supabase ejecuta el contenido de `20261026_privacy_v3.sql` que viene con el launcher/bot. La migración `game_admin_v1` no sustituye a la migración legal. Después publica la web actualizada y recarga con Ctrl+F5. Si el error aparece en el launcher, aplica la misma migración: ambos usan el mismo trigger de Supabase.
