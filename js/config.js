@@ -7,5 +7,5 @@ window.KOVO_WEB = Object.freeze({
   // Enlace de descarga del instalador (GitHub Releases). Déjalo vacío hasta publicar la primera versión.
   DOWNLOAD_URL: 'https://github.com/Estudio44X/kovo/releases/latest/download/KOVO-Launcher-Setup.exe',
   // Invitación permanente a tu Discord. Déjalo vacío si aún no la tienes.
-  DISCORD_URL: ''
+  DISCORD_URL: 'https://discord.gg/sb8bJyCh67'
 });
